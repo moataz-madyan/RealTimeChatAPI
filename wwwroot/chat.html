@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RealTimeChatAPI</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
+    <style>
+        body { font-family: Arial; max-width: 600px; margin: 40px auto; padding: 20px; }
+        input, button { padding: 10px; margin: 5px 0; }
+        input { width: 95%; }
+        #messages { border: 1px solid #ccc; min-height: 200px; padding: 12px; }
+    </style>
+</head>
+<body>
+    <h1>Real-Time Chat</h1>
+
+    <input id="sender" placeholder="Your name" value="Moataz">
+    <div id="messages"></div>
+
+    <input id="content" placeholder="Type a message">
+    <button id="send">Send</button>
+
+    <script>
+        const messages = document.getElementById("messages");
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/chatHub")
+            .withAutomaticReconnect()
+            .build();
+
+        connection.on("ReceiveMessage", message => {
+            const item = document.createElement("p");
+            item.textContent = `${message.senderName}: ${message.content}`;
+            messages.appendChild(item);
+        });
+
+        async function start() {
+            try {
+                await connection.start();
+                messages.textContent = "Connected to chat!";
+            } catch (error) {
+                messages.textContent = "Connection failed: " + error;
+            }
+        }
+
+        document.getElementById("send").addEventListener("click", async () => {
+            const sender = document.getElementById("sender").value.trim();
+            const content = document.getElementById("content").value.trim();
+
+            if (!sender || !content) {
+                alert("Enter your name and a message.");
+                return;
+            }
+
+            try {
+                await connection.invoke("SendMessage", sender, content);
+                document.getElementById("content").value = "";
+            } catch (error) {
+                alert("Could not send message: " + error);
+            }
+        });
+
+        start();
+    </script>
+</body>
+</html>
